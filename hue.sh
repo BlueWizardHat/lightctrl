@@ -13,8 +13,8 @@ GROUP="$(echo $1 | tr '[:lower:]' '[:upper:]')"
 STATE=$2
 BRIGHTNESS=$3
 
-declare -A lights=([livingrom]="1 2 3 4 5"  [kitchen]="6 7 8 9")
-roomlights=${lights["livingroom"]}
+#declare -A lights=([livingrom]="1 2 3 4 5"  [kitchen]="6 7 8 9")
+#roomlights=${lights["livingroom"]}
 
 if [ "$GROUP" = "LIVINGROOM" ]; then
   LIGHTS="$LIVINGROOM"
@@ -24,7 +24,7 @@ elif [ "$GROUP" = "FRONTDOOR" ]; then
   LIGHTS="$FRONTDOOR"
 elif [ "$GROUP" = "ALL" ]; then
   LIGHTS="$ALL"
-elif [ "$GROUP" = "UPSTAIRS" ]; then
+elif [ "$GROUP" = "BATHROOMUPSTAIRS" ]; then
   LIGHTS="$UPSTAIRS"
 fi
 
