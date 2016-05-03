@@ -12,9 +12,7 @@ source ./hue.config
 GROUP="$(echo $1 | tr '[:lower:]' '[:upper:]')"
 STATE=$2
 BRIGHTNESS=$3
-
-#declare -A lights=([livingrom]="1 2 3 4 5"  [kitchen]="6 7 8 9")
-#roomlights=${lights["livingroom"]}
+STARTTIME="$(date +%a\ %H:%M:%S)"
 
 if [ "$GROUP" = "LIVINGROOM" ]; then
   LIGHTS="$LIVINGROOM"
@@ -132,6 +130,71 @@ light_status(){
   done
 }
 
+# light status record
+light_status_record(){
+  STATUSFILE="record.test"
+  echo "$(date +%a\ %H:%M:%S) : Recording light status to file since ${STARTTIME} [Ctrl + c to break]"
+
+  for LIGHT in ${LIGHTS}; do
+    unset NAME TYPE STATE REACH BRIGHTNESS HUE
+    TYPE="$(type_of_bulb)"
+    if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
+      TYPE="White E27"
+      ON="$(check_if_on)"
+      NAME="$(name_of_light)"
+      REACHABLE="$(check_if_reachable)"
+      if [ $REACHABLE == "true" ]; then
+        if [ $ON == "true" ]; then
+          BRIGHTNESS="$(brightness_of_light)"
+	  STATE="ON"
+        else
+          BRIGHTNESS="---"
+	  STATE="OFF"
+        fi
+	REACH="YES"
+      else
+        BRIGHTNESS="?"
+	ON="?"
+	STATE="?"
+	REACH="NO"
+      fi
+      HUE="---"
+          echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}"
+    else
+      echo "Type of light is unknown"
+      exit 1
+    fi
+
+    # get the last recorded status for a light
+    egrep "^${LIGHT}" "${STATUSFILE}" | tail -n 1 | awk -F '|' {'print $4 " " $6 " " $7'} |
+      while read LSTATE LBRIGHTNESS LHUE; do
+        if [ "${LSTATE}" == "${STATE}" ]; then
+          echo "State unchanged"
+	# something changed, time for an update
+	else
+          echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
+	fi
+      done
+
+  done
+  sleep 10
+  light_status_record
+#
+##      done
+#    # so is the current status unchanged, don't record it, otherwise do
+#    #if egrep -q "\\${STATE} \\${BRIGHTNESS} ${HUE}"; then
+#    #  echo "No change"
+#    #else
+#    #  echo "New state"
+#    #  echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
+#    #fi
+#  #done
+#
+#  # sleep 10 and loop away
+#  sleep 10
+#  light_status_record
+}
+
 # perform action
 if [ "$2" = "on" ]; then
         light_on
@@ -139,4 +202,6 @@ elif [ "$2" = "off" ]; then
         light_off
 elif [ "$2" = "status" ]; then
         light_status
+elif [ "$2" = "record" ]; then
+        light_status_record
 fi
