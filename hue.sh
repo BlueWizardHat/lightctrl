@@ -132,6 +132,7 @@ light_status(){
 
 # light status record
 light_status_record(){
+  TIME="$(date +%a\ %H:%M:%S)"
   STATUSFILE="record.test"
   echo "$(date +%a\ %H:%M:%S) : Recording light status to file since ${STARTTIME} [Ctrl + c to break]"
 
@@ -159,40 +160,31 @@ light_status_record(){
 	REACH="NO"
       fi
       HUE="---"
-          echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}"
     else
       echo "Type of light is unknown"
       exit 1
     fi
 
     # get the last recorded status for a light
-    egrep "^${LIGHT}" "${STATUSFILE}" | tail -n 1 | awk -F '|' {'print $4 " " $6 " " $7'} |
-      while read LSTATE LBRIGHTNESS LHUE; do
-        if [ "${LSTATE}" == "${STATE}" ]; then
-          echo "State unchanged"
-	# something changed, time for an update
-	else
-          echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
-	fi
-      done
+    LASTSTATE="$(egrep "^[[:alpha:]]{3} [[:digit:]:]{8} \| ${LIGHT}" "${STATUSFILE}" | tail -n 1)"
+    # so is there a former state
+    if [ -z "${LASTSTATE}" ]; then
+      echo "First entry for light ${LIGHT} (${NAME}) in file ${STATUSFILE} @ ${TIME}"
+      echo "${TIME} | ${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
+    else
+      echo "${LASTSTATE}" | tail -n 1 | awk -F '|' {'print $5 " " $7 " " $8'} |
+        while read LSTATE LBRIGHTNESS LHUE; do
+  	  # something changed, time for an update
+          if [ "${LSTATE}" != "${STATE}" ] || [ "${LBRIGHTNESS}" != "${BRIGHTNESS}" ] || [ "${LHUE}" != "${HUE}" ]; then
+            echo "Adding entry for light ${LIGHT} (${NAME}) in file ${STATUSFILE} @ ${TIME}"
+            echo "${TIME} | ${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
+  	  fi
+        done
+    fi
 
   done
   sleep 10
   light_status_record
-#
-##      done
-#    # so is the current status unchanged, don't record it, otherwise do
-#    #if egrep -q "\\${STATE} \\${BRIGHTNESS} ${HUE}"; then
-#    #  echo "No change"
-#    #else
-#    #  echo "New state"
-#    #  echo  "${LIGHT} | ${NAME} | ${TYPE} | ${STATE} | ${REACH} | ${BRIGHTNESS} | ${HUE}" >> "${STATUSFILE}"
-#    #fi
-#  #done
-#
-#  # sleep 10 and loop away
-#  sleep 10
-#  light_status_record
 }
 
 # perform action
