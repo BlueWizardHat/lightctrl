@@ -8,8 +8,17 @@
 # include configuration file
 source ./hue.config
 
-# convert group to uppercase
-GROUP="$(echo $1 | tr '[:lower:]' '[:upper:]')"
+# This can be a direct number of a bulb or a predefined group
+REGEXNUMBER='^[0-9]+$'
+if ! [[ $1 =~ ${REGEXNUMBER} ]] ; then
+  # So if it's not a number, it should be a group
+  # convert group to uppercase
+  GROUP="$(echo $1 | tr '[:lower:]' '[:upper:]')"
+else
+  # the number should be a direct reference to a bulb
+  LIGHTS="$1"
+fi
+
 STATE=$2
 BRIGHTNESS=$3
 STARTTIME="$(date +%a\ %H:%M:%S)"
