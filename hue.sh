@@ -8,12 +8,37 @@
 # include configuration file
 source ./hue.config
 
+showhelp(){
+  echo "`basename "$0"` <group|bulb|funtion> <on|off|status> <brightness>"
+  echo ""
+  echo "Examples:"
+  echo "`basename "$0"` 5 on 100"
+  echo "`basename "$0"` livingroom on 80"
+  echo "`basename "$0"` livingroom off"
+  echo "`basename "$0"` status all"
+  echo "`basename "$0"` record"
+}
+
 # This can be a direct number of a bulb or a predefined group
 REGEXNUMBER='^[0-9]+$'
 if ! [[ $1 =~ ${REGEXNUMBER} ]] ; then
   # So if it's not a number, it should be a group
   # convert group to uppercase
   GROUP="$(echo $1 | tr '[:lower:]' '[:upper:]')"
+  if [ "$GROUP" = "LIVINGROOM" ]; then
+    LIGHTS="$LIVINGROOM"
+  elif [ "$GROUP" = "KITCHEN" ]; then
+    LIGHTS="$KITCHEN"
+  elif [ "$GROUP" = "FRONTDOOR" ]; then
+    LIGHTS="$FRONTDOOR"
+  elif [ "$GROUP" = "ALL" ]; then
+    LIGHTS="$ALL"
+  elif [ "$GROUP" = "BATHROOMUPSTAIRS" ]; then
+    LIGHTS="$UPSTAIRS"
+  else
+    echo "Unknown group"
+    showhelp
+  fi
 else
   # the number should be a direct reference to a bulb
   LIGHTS="$1"
@@ -22,18 +47,6 @@ fi
 STATE=$2
 BRIGHTNESS=$3
 STARTTIME="$(date +%a\ %H:%M:%S)"
-
-if [ "$GROUP" = "LIVINGROOM" ]; then
-  LIGHTS="$LIVINGROOM"
-elif [ "$GROUP" = "KITCHEN" ]; then
-  LIGHTS="$KITCHEN"
-elif [ "$GROUP" = "FRONTDOOR" ]; then
-  LIGHTS="$FRONTDOOR"
-elif [ "$GROUP" = "ALL" ]; then
-  LIGHTS="$ALL"
-elif [ "$GROUP" = "BATHROOMUPSTAIRS" ]; then
-  LIGHTS="$UPSTAIRS"
-fi
 
 # All this can be combined
 # will get status true|false for a bulb to see if the bridge believes it to be on or off
