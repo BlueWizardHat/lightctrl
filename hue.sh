@@ -55,15 +55,15 @@ check_if_on(){
 }
 
 type_of_bulb(){
-  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" |sed -e 's/.*\"modelid/modelid/' -e 's/\,.*//' -e 's/type\": \"//' -e 's/\"//')"
+  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" | egrep -o '\"modelid\": \"[^"]+' | awk -F '"' {'print $NF}')"
 }
 
 check_if_reachable(){
-  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" |cut -d, -f4 |cut -d: -f2 |tr -d '}')"
+  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" | egrep -o '\"reachable\":[^ ]+' | awk -F '"' {'print $NF}' | tr -d ':},')"
 }
 
 name_of_light(){
-  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" |cut -d, -f6 |cut -d: -f2 |sed -e 's/}//' -e 's/"//' -e 's/\"//')"
+  echo "$(curl -X GET -s "http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}" | egrep -o '\"name\": \"[^"]+' | awk -F '"' {'print $NF}')"
 }
 
 # Return brightness as a percentage
@@ -101,7 +101,15 @@ light_on()
 
     # HUE White
     if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
-      TYPE="White E27"
+      #TYPE="White E27"
+      ON="$(check_if_on)"
+      if [ $ON = "true" ]; then
+        curl -X PUT -d '{"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
+      elif [ $ON = "false" ]; then
+        curl -X PUT -d '{"on":true,"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
+      fi
+    elif [ $(echo ${TYPE} |grep -c "PAR16 50 TW")  = 1 ]; then
+      #TYPE="Lightify GU10"
       ON="$(check_if_on)"
       if [ $ON = "true" ]; then
         curl -X PUT -d '{"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
@@ -123,30 +131,33 @@ light_status(){
     unset NAME TYPE STATE REACH BRIGHTNESS HUE
     TYPE="$(type_of_bulb)"
     if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
-      TYPE="White E27"
-      ON="$(check_if_on)"
-      NAME="$(name_of_light)"
-      REACHABLE="$(check_if_reachable)"
-      if [ $REACHABLE == "true" ]; then
-        if [ $ON == "true" ]; then
-          BRIGHTNESS="$(brightness_of_light)"
-	  STATE="ON"
-        else
-          BRIGHTNESS="---"
-	  STATE="OFF"
-        fi
-	REACH="YES"
-      else
-        BRIGHTNESS="?"
-	ON="?"
-	STATE="?"
-	REACH="NO"
-      fi
-      HUE="---"
+      TYPE="Hue White E27"
+    elif [ $(echo ${TYPE} |grep -c "PAR16 50 TW")  = 1 ]; then
+      TYPE="Lightify GU10"
     else
       echo "Type of light is unknown"
       exit 1
     fi
+
+    ON="$(check_if_on)"
+    NAME="$(name_of_light)"
+    REACHABLE="$(check_if_reachable)"
+    if [ $REACHABLE == "true" ]; then
+      if [ $ON == "true" ]; then
+        BRIGHTNESS="$(brightness_of_light)"
+	  STATE="ON"
+      else
+        BRIGHTNESS="---"
+	  STATE="OFF"
+      fi
+	REACH="YES"
+    else
+      BRIGHTNESS="?"
+	ON="?"
+	STATE="?"
+	REACH="NO"
+    fi
+    HUE="---"
 
     printf "%-2s | %-22s | %-10s | %-5s | %-9s | %-10s | %-10s\n" "${LIGHT}" "${NAME}" "${TYPE}" "${STATE}" "${REACH}" "${BRIGHTNESS}" "${HUE}"
   done
