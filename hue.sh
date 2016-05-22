@@ -83,7 +83,8 @@ light_off()
   for LIGHT in ${LIGHTS}; do
     ON="$(check_if_on)"
     while [ $ON = "true" ]; do
-      curl -X PUT -d '{"on":false}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
+      # parameter "transitiontime" added for Lightify compitability on older firmware
+      curl -X PUT -d '{"on":false, "transitiontime":0}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
       ON="$(check_if_on)"
       sleep 0.1 # not sure a delay is needed
     done
