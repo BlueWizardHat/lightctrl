@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# Author  : Peter Lagoni Kirkemann
-# Purpose : Control Philips HUE lights from a shell
-
-# Inspired by https://github.com/danradom/hue
+# Purpose : Control Philips HUE and Osram Lightify lights from a shell
 
 # include configuration file
 source ./lightctrl.conf

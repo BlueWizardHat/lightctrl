@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Author  : Peter Lagoni Kirkemann
 # Purpose : 
 
 showhelp(){
