@@ -6,7 +6,7 @@
 # Inspired by https://github.com/danradom/hue
 
 # include configuration file
-source ./hue.config
+source ./lightctrl.conf
 
 showhelp(){
   echo "`basename "$0"` <group|bulb|funtion> <on|off|status> <brightness>"
@@ -102,17 +102,8 @@ light_on()
   for LIGHT in ${LIGHTS}; do
     TYPE="$(type_of_bulb)"
 
-    # HUE White
-    if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
-      #TYPE="White E27"
-      ON="$(check_if_on)"
-      if [ $ON = "true" ]; then
-        curl -X PUT -d '{"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
-      elif [ $ON = "false" ]; then
-        curl -X PUT -d '{"on":true,"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
-      fi
-    elif [ $(echo ${TYPE} |grep -c "PAR16 50 TW")  = 1 ]; then
-      #TYPE="Lightify GU10"
+    # White light bulbs "Hue White E27" and "Lightify GU10"
+    if [ $(echo ${TYPE} | grep -c LWB006) = 1 ] || [ $(echo ${TYPE} | grep -c "PAR16 50 TW")  = 1 ]; then
       ON="$(check_if_on)"
       if [ $ON = "true" ]; then
         curl -X PUT -d '{"bri":'${BRIGHT}'}' http://${BRIDGE}/api/${USERNAME}/lights/${LIGHT}/state > /dev/null 2>&1
@@ -127,8 +118,8 @@ light_on()
 
 # light status function
 light_status(){
-  echo "#  | Name                   | Type       | State | Reachable | Brightness | Hue"
-  echo "-------------------------------------------------------------------------------"
+  echo "#  | Name                   | Type                 | State | Reachable | Brightness | Hue"
+  echo "-----------------------------------------------------------------------------------------"
 
   for LIGHT in ${LIGHTS}; do
     unset NAME TYPE STATE REACH BRIGHTNESS HUE
@@ -136,7 +127,7 @@ light_status(){
     if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
       TYPE="Hue White E27"
     elif [ $(echo ${TYPE} |grep -c "PAR16 50 TW")  = 1 ]; then
-      TYPE="Lightify GU10"
+      TYPE="Lightify White GU10"
     else
       echo "Type of light is unknown"
       exit 1
@@ -162,44 +153,47 @@ light_status(){
     fi
     HUE="---"
 
-    printf "%-2s | %-22s | %-10s | %-5s | %-9s | %-10s | %-10s\n" "${LIGHT}" "${NAME}" "${TYPE}" "${STATE}" "${REACH}" "${BRIGHTNESS}" "${HUE}"
+    printf "%-2s | %-22s | %-20s | %-5s | %-9s | %-10s | %-10s\n" "${LIGHT}" "${NAME}" "${TYPE}" "${STATE}" "${REACH}" "${BRIGHTNESS}" "${HUE}"
   done
 }
 
 # light status record
 light_status_record(){
   TIME="$(date +%a\ %H:%M:%S)"
-  STATUSFILE="record.test"
+  STATUSFILE="record.file"
   echo "$(date +%a\ %H:%M:%S) : Recording light status to file since ${STARTTIME} [Ctrl + c to break]"
 
   for LIGHT in ${LIGHTS}; do
     unset NAME TYPE STATE REACH BRIGHTNESS HUE
     TYPE="$(type_of_bulb)"
     if [ $(echo ${TYPE} |grep -c LWB006) = 1 ]; then
-      TYPE="White E27"
-      ON="$(check_if_on)"
-      NAME="$(name_of_light)"
-      REACHABLE="$(check_if_reachable)"
-      if [ $REACHABLE == "true" ]; then
-        if [ $ON == "true" ]; then
-          BRIGHTNESS="$(brightness_of_light)"
-	  STATE="ON"
-        else
-          BRIGHTNESS="---"
-	  STATE="OFF"
-        fi
-	REACH="YES"
-      else
-        BRIGHTNESS="?"
-	ON="?"
-	STATE="?"
-	REACH="NO"
-      fi
-      HUE="---"
+      TYPE="Hue White E27"
+    elif [ $(echo ${TYPE} |grep -c "PAR16 50 TW")  = 1 ]; then
+      TYPE="Lightify White GU10"
     else
       echo "Type of light is unknown"
       exit 1
     fi
+
+    ON="$(check_if_on)"
+    NAME="$(name_of_light)"
+    REACHABLE="$(check_if_reachable)"
+    if [ $REACHABLE == "true" ]; then
+      if [ $ON == "true" ]; then
+        BRIGHTNESS="$(brightness_of_light)"
+	  STATE="ON"
+      else
+        BRIGHTNESS="---"
+	  STATE="OFF"
+      fi
+	REACH="YES"
+    else
+      BRIGHTNESS="?"
+	ON="?"
+	STATE="?"
+	REACH="NO"
+    fi
+    HUE="---"
 
     # get the last recorded status for a light
     LASTSTATE="$(egrep "^[[:alpha:]]{3} [[:digit:]:]{8} \| ${LIGHT}" "${STATUSFILE}" | tail -n 1)"
