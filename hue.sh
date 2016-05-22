@@ -34,7 +34,9 @@ if ! [[ $1 =~ ${REGEXNUMBER} ]] ; then
   elif [ "$GROUP" = "ALL" ]; then
     LIGHTS="$ALL"
   elif [ "$GROUP" = "BATHROOMUPSTAIRS" ]; then
-    LIGHTS="$UPSTAIRS"
+    LIGHTS="$BATHROOMUPSTAIRS"
+  elif [ "$GROUP" = "BEDROOM" ]; then
+    LIGHTS="$BEDROOM"
   else
     echo "Unknown group"
     showhelp
