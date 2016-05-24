@@ -1,6 +1,8 @@
-Philips Hue Bash
+lightctrl
 ****
-Author  : Peter Lagoni Kirkemann
+WARNING: This is very much a work in progress still
+****
+
 Purpose : Control Philips HUE and Osram Lightify lights from a shell on Linux
 
 Inspired by https://github.com/danradom/hue
